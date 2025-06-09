@@ -1,42 +1,39 @@
 #!/bin/bash
 
 gc_kernel=none
+toolchain=host
 
 rm -f *.o
 rm -f *.riscv
 
 # Input flags
-while getopts k: flag
+while getopts k:t: flag
 do
 	case "${flag}" in
 		k) gc_kernel=${OPTARG};;
+		t) toolchain=${OPTARG};;
 	esac
 done
 
+# Validate toolchain option
+if [ "$toolchain" != "host" ] && [ "$toolchain" != "riscv" ]; then
+    echo "Error: Invalid toolchain option. Use 'host' or 'riscv'"
+    echo "Usage: $0 [-k gc_kernel] [-t toolchain]"
+    echo "  -k: GC kernel option (default: none)"
+    echo "  -t: Toolchain selection - 'host' or 'riscv' (default: host)"
+    exit 1
+fi
+
 input_type=simmedium
 
-export PATH_GC_KERNELS="/home/centos/gc_kernel/"
 export PATH_PKGS=$PWD
+export PARSEC_TOOLCHAIN=$toolchain
 
-cd $PATH_GC_KERNELS
-
-make clean
-make gc_main_${gc_kernel}
-cp gc_main_${gc_kernel}.o $PATH_PKGS
-
-if [[ $gc_kernel == sanitiser ]]; then
-    make malloc
-fi
-
-
-if [[ $gc_kernel != none ]]; then
-    make initialisation_${gc_kernel}
-    cp initialisation_${gc_kernel}.riscv $PATH_PKGS
-fi
+echo "Building with $toolchain toolchain..."
 
 cd $PATH_PKGS
 
-BENCHMARKS=(blackscholes bodytrack dedup facesim ferret fluidanimate freqmine streamcluster swaptions)
+BENCHMARKS=(blackscholes bodytrack dedup ferret fluidanimate freqmine streamcluster swaptions)
 
 cmd="parsecmgmt -a clean -p all"
 eval ${cmd}

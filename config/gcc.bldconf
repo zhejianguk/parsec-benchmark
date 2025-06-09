@@ -7,10 +7,36 @@
 # Written by Christian Bienia (Initial version)
 #            Christian Fensch (Sparc/Solaris port)
 
-export CC_HOME="/usr"
-export BINUTIL_HOME="/usr"
-export GNUTOOL_HOME="/usr"
-export GC_Kernel=""
+# Check toolchain selection (default to host if not specified)
+if [ -z "$PARSEC_TOOLCHAIN" ]; then
+  export PARSEC_TOOLCHAIN="host"
+fi
+
+echo "Configuring for $PARSEC_TOOLCHAIN toolchain..."
+
+if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
+  # RISC-V toolchain configuration
+  if [ -z "$RISCV" ]; then
+    echo "Error: RISCV environment variable is not set. Please set it to the RISC-V toolchain installation directory."
+    exit 1
+  fi
+  export CC_HOME="$RISCV"
+  export BINUTIL_HOME="$RISCV"
+  export GNUTOOL_HOME="/usr"
+  export BINARY_PREFIX="riscv64-unknown-linux-gnu-"
+  export GC_KERNEL=""
+  export HOST_CONF="riscv64-unknown-linux-gnu"
+  export GNU_TARGET_NAME="riscv64-unknown-linux-gnu"
+else
+  # Host toolchain configuration (default)
+  export CC_HOME="/usr"
+  export BINUTIL_HOME="/usr"
+  export GNUTOOL_HOME="/usr"
+  export BINARY_PREFIX=""
+  export GC_KERNEL=""
+  export HOST_CONF=""
+  export GNU_TARGET_NAME=""
+fi
 
 if [ -z "$HOSTCC" ]; then
   export HOSTCC=gcc
@@ -21,32 +47,67 @@ fi
 if [ -z "$MAKE" ]; then
   export MAKE=make
 fi
-if [ -z "$TARGET_CROSS" ]; then
-  export TARGET_CROSS=/usr/bin/
+if [ -z "$CAT" ]; then
+  export CAT=cat
 fi
 
-# Compilers and preprocessors
-export CC="${TARGET_CROSS}gcc"
-export CXX="${TARGET_CROSS}g++"
-export CPP="${TARGET_CROSS}cpp"
-export CXXCPP=""
+if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
+  if [ -z "$TARGET_CROSS" ]; then
+    export TARGET_CROSS="${RISCV}/bin/"
+  fi
+  
+  # Compilers and preprocessors
+  export CC="${CC_HOME}/bin/${BINARY_PREFIX}gcc"
+  export CXX="${CC_HOME}/bin/${BINARY_PREFIX}g++"
+  export CPP="${CC_HOME}/bin/${BINARY_PREFIX}cpp"
+  export CXXCPP=""
+  
+  # GNU Binutils
+  export LD="${BINUTIL_HOME}/bin/${BINARY_PREFIX}ld"
+  export AS="${BINUTIL_HOME}/bin/${BINARY_PREFIX}as"
+  export AR="${BINUTIL_HOME}/bin/${BINARY_PREFIX}ar"
+  export RANLIB="${BINUTIL_HOME}/bin/${BINARY_PREFIX}ranlib"
+  export STRIP="${BINUTIL_HOME}/bin/${BINARY_PREFIX}strip"
+  
+  # Arguments to use
+  export CFLAGS=" $CFLAGS -O3"
+  export CXXFLAGS="$CXXFLAGS -O3 -fpermissive -fno-exceptions -std=c++17"
+  export CPPFLAGS="-O3"
+  export CXXCPPFLAGS="-O3"
+  export LIBS="${GC_KERNEL} -lpthread -lstdc++"
+  export EXTRA_LIBS=""
+  export PARMACS_MACRO_FILE="pthreads"
+  export LDFLAGS="-static"
+else
+  # Host toolchain configuration
+  if [ -z "$TARGET_CROSS" ]; then
+    export TARGET_CROSS=/usr/bin/
+  fi
+  
+  # Compilers and preprocessors
+  export CC="${TARGET_CROSS}gcc"
+  export CXX="${TARGET_CROSS}g++"
+  export CPP="${TARGET_CROSS}cpp"
+  export CXXCPP=""
+  
+  # GNU Binutils
+  export LD="${TARGET_CROSS}ld"
+  export AS="${TARGET_CROSS}as"
+  export AR="${TARGET_CROSS}ar"
+  export RANLIB="${TARGET_CROSS}ranlib"
+  export STRIP="${TARGET_CROSS}strip"
+  
+  # Arguments to use
+  export CFLAGS=" $CFLAGS"
+  export CXXFLAGS="$CXXFLAGS -fpermissive -fno-exceptions -std=c++17"
+  export CPPFLAGS=""
+  export CXXCPPFLAGS=""
+  export LIBS="$GC_KERNEL"
+  export EXTRA_LIBS=""
+  export PARMACS_MACRO_FILE="pthreads"
+  export LDFLAGS=""
+fi
 
-# GNU Binutils
-export LD="${TARGET_CROSS}ld"
-export AS="${TARGET_CROSS}as"
-export AR="${TARGET_CROSS}ar"
-export RANLIB="${TARGET_CROSS}ranlib"
-export STRIP="${TARGET_CROSS}strip"
-
-# Arguments to use
-export CFLAGS=" $CFLAGS"
-export CXXFLAGS="$CXXFLAGS -fpermissive -fno-exceptions -std=c++17"
-export CPPFLAGS=""
-export CXXCPPFLAGS="s"
-export LIBS="$GC_Kernel"
-export EXTRA_LIBS=""
-export PARMACS_MACRO_FILE="pthreads"
-export LDFLAGS=""
 # Add PARSEC version to compiler flags
 if [ -f "${PARSECDIR}/version" ]; then
   CFLAGS="${CFLAGS} -DPARSEC_VERSION=$(${CAT} ${PARSECDIR}/version)"
@@ -58,23 +119,23 @@ export JAVA_HOME="/usr"
 export JAVAC="${JAVA_HOME}/bin/javac"
 
 # Version numbers
-if [ -x ${CC} ]; then
-  CC_ver=$(${CC} --version)
+if [ -x "${CC}" ]; then
+  CC_ver=$(${CC} --version 2>/dev/null || echo "Not available")
 else
-  CC_ver=""
+  CC_ver="Not available"
 fi
-if [ -x ${CXX} ]; then
-  CXX_ver=$(${CXX} --version)
+if [ -x "${CXX}" ]; then
+  CXX_ver=$(${CXX} --version 2>/dev/null || echo "Not available")
 else
-  CXX_ver=""
+  CXX_ver="Not available"
 fi
-if [ -x ${LD} ]; then
-  LD_ver=$(${LD} --version)
+if [ -x "${LD}" ]; then
+  LD_ver=$(${LD} --version 2>/dev/null || echo "Not available")
 else
-  LD_ver=""
+  LD_ver="Not available"
 fi
-if [ -x ${JAVAC} ]; then
-  JAVAC_ver=$(${JAVAC} -version 2>&1)
+if [ -x "${JAVAC}" ]; then
+  JAVAC_ver=$(${JAVAC} -version 2>&1 || echo "Not available")
 else
-  JAVAC_ver=""
+  JAVAC_ver="Not available"
 fi
