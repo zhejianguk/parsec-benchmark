@@ -6,7 +6,7 @@
 
 my $openssl;
 
-my $dir = "/usr/local/ssl";
+my $dir = "/tmp/test2/ssl";
 
 if(defined $ENV{OPENSSL}) {
 	$openssl = $ENV{OPENSSL};

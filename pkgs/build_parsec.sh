@@ -26,6 +26,8 @@ fi
 
 input_type=simmedium
 
+# Set up PARSEC environment
+export PARSECDIR="$(dirname $PWD)"
 export PATH_PKGS=$PWD
 export PARSEC_TOOLCHAIN=$toolchain
 
@@ -33,20 +35,20 @@ echo "Building with $toolchain toolchain..."
 
 cd $PATH_PKGS
 
-BENCHMARKS=(blackscholes bodytrack dedup ferret fluidanimate freqmine streamcluster swaptions)
+BENCHMARKS=(dedup)
 
-cmd="parsecmgmt -a clean -p all"
+cmd="${PARSECDIR}/bin/parsecmgmt -a clean -p all"
 eval ${cmd}
-cmd="parsecmgmt -a fulluninstall -p all"
+cmd="${PARSECDIR}/bin/parsecmgmt -a fulluninstall -p all"
 eval ${cmd}
 
 
 for benchmark in ${BENCHMARKS[@]}; do
 
-    cmd="parsecmgmt -a build -p ${benchmark}"
+    cmd="${PARSECDIR}/bin/parsecmgmt -a build -p ${benchmark}"
     eval ${cmd}
 
-    cmd="parsecmgmt -a run -p ${benchmark} -i ${input_type}"
+    cmd="${PARSECDIR}/bin/parsecmgmt -a run -p ${benchmark} -i ${input_type}"
     eval ${cmd}
 
 done

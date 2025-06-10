@@ -17,7 +17,12 @@
 build_deps=""
 
 # Environment to use for configure script and Makefile
-build_env="PATH=\"${CC_HOME}/bin:${PATH}\""
+if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
+    # For RISC-V cross-compilation, we need to set CC and other variables explicitly
+    build_env="PATH=\"${CC_HOME}/bin:${PATH}\" CC=\"${CC}\" CXX=\"${CXX}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\" CROSS_COMPILE=\"${BINARY_PREFIX}\""
+else
+    build_env="PATH=\"${CC_HOME}/bin:${PATH}\""
+fi
 
 # Whether the build system supports only in-place compilation.
 # If TRUE, then all sources will be copied to the build directory before we
@@ -26,6 +31,18 @@ build_env="PATH=\"${CC_HOME}/bin:${PATH}\""
 build_inplace="TRUE"
 
 # Arguments to pass to the configure script, if it exists
-#build_conf="threads no-zlib no-shared linux-${GNU_TARGET_NAME}"
-build_conf="threads no-zlib no-shared"
+if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
+    # For RISC-V, we use Configure.pl directly instead of config auto-detection
+    # The configure script will be replaced with a wrapper
+    build_conf="linux-generic64 --cross-compile-prefix=${BINARY_PREFIX} threads no-zlib no-shared"
+else
+    build_conf="threads no-zlib no-shared"
+fi
+
+# Override build targets when cross-compiling for RISC-V to avoid test linking issues
+if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
+    build_targets="build_libs build_apps build_tools"
+else
+    build_targets=""
+fi
 

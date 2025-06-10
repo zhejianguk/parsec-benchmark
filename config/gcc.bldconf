@@ -15,6 +15,7 @@ fi
 echo "Configuring for $PARSEC_TOOLCHAIN toolchain..."
 
 if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
+  export RISCV="/home/zhejiang/firesim/.conda-env/riscv-tools"
   # RISC-V toolchain configuration
   if [ -z "$RISCV" ]; then
     echo "Error: RISCV environment variable is not set. Please set it to the RISC-V toolchain installation directory."
@@ -27,6 +28,10 @@ if [ "$PARSEC_TOOLCHAIN" = "riscv" ]; then
   export GC_KERNEL=""
   export HOST_CONF="riscv64-unknown-linux-gnu"
   export GNU_TARGET_NAME="riscv64-unknown-linux-gnu"
+  
+  # Override platform detection for RISC-V cross-compilation
+  # Set PARSECPLAT to use riscv64-linux instead of host architecture
+  export PARSECPLAT="riscv64-linux.gcc"
 else
   # Host toolchain configuration (default)
   export CC_HOME="/usr"

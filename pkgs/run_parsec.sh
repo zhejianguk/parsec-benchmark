@@ -1,17 +1,25 @@
 #!/bin/bash
 
 gc_kernel=none
+toolchain=host
 
 # Input flags
-while getopts k: flag
+while getopts k:t: flag
 do
 	case "${flag}" in
 		k) gc_kernel=${OPTARG};;
+		t) toolchain=${OPTARG};;
 	esac
 done
 
 input_type=simmedium
-arch=amd64-linux # Revist: currently is the arch of the host machine
+
+# Set architecture based on toolchain
+if [ "$toolchain" = "riscv" ]; then
+    arch=riscv64-linux
+else
+    arch=amd64-linux  # Default for host
+fi
 
 
 BENCHMARKS=(blackscholes bodytrack dedup ferret fluidanimate freqmine streamcluster swaptions)
