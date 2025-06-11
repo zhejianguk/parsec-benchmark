@@ -6,6 +6,11 @@ toolchain=host
 rm -f *.o
 rm -f *.riscv
 
+cmd="parsecmgmt -a clean -p all"
+eval ${cmd}
+cmd="parsecmgmt -a fulluninstall -p all"
+eval ${cmd}
+
 # Input flags
 while getopts k:t: flag
 do
@@ -62,6 +67,7 @@ if [ "$toolchain" = "riscv" ]; then
 else
     SSL_SKIP=false
 fi
+
 
 # Clean everything except SSL if we're skipping SSL rebuild
 if [ "$SSL_SKIP" = "true" ]; then
